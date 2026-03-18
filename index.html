@@ -79,7 +79,7 @@
   <div class="icon">🚨</div>
   <div class="text">
     <h2>TIER 2 "High Confidence" — Thursday Jan 22 evening</h2>
-    <p>RHR crossed baseline + 6 bpm, HRV dropped below 80% of baseline, Walking HR still elevated. Full confirmation <strong>~24 hours</strong> before symptoms.</p>
+    <p>RHR crossed baseline + 6 bpm, HRV dropped below 85% of baseline, Walking HR still elevated. Full confirmation <strong>~24 hours</strong> before symptoms.</p>
   </div>
 </div>
 
@@ -166,7 +166,7 @@
   <!-- Composite Alert Chart — Two Tier -->
   <div class="chart-card full-width">
     <h3>Composite "Getting Sick" Score — Two-Tier System</h3>
-    <div class="signal">Combines absolute z-scores + day-over-day deltas. Tier 1 (yellow) fires at 0.75σ, Tier 2 (red) at 1.5σ.</div>
+    <div class="signal">Shows how many criteria are actually met each day. Tier 1 fires when ≥2 delta criteria are met. Tier 2 fires when RHR + HRV absolute thresholds are crossed with confirmation.</div>
     <canvas id="compositeChart" style="height:240px"></canvas>
   </div>
 </div>
@@ -181,7 +181,7 @@
   </div>
   <div class="tier-rule">Fire when <strong>ANY 2</strong> of these day-over-day deltas are true on the same day:</div>
   <div class="tier-rule">• RHR Δ ≥ <code>+4 bpm</code> in one day</div>
-  <div class="tier-rule">• Walking HR Δ ≥ <code>+5 bpm</code> in one day</div>
+  <div class="tier-rule">• Walking HR Δ ≥ <code>+5 bpm</code> in one day (both days ≤ 90 bpm, filtering exercise)</div>
   <div class="tier-rule">• HRV Δ ≤ <code>-15%</code> in one day</div>
   <div class="tier-rule">• Wrist Temp Δ ≥ <code>+0.4°F</code> in one day</div>
   <div class="tier-rule" style="margin-top:8px;color:#d29922;">→ <strong>Jan 21:</strong> RHR Δ = +4 ✓, Walking HR Δ = +7 ✓ → <strong>FIRES</strong></div>
@@ -193,12 +193,12 @@
   </div>
   <div class="tier-rule">Fire when <strong>BOTH</strong> are true:</div>
   <div class="tier-rule">• RHR > <code>7-day rolling avg + 6 bpm</code></div>
-  <div class="tier-rule">• HRV < <code>7-day rolling avg × 0.80</code></div>
+  <div class="tier-rule">• HRV < <code>7-day rolling avg × 0.85</code></div>
   <div class="tier-rule">Plus <strong>ANY 1</strong> confirmation signal:</div>
   <div class="tier-rule">• Walking HR > <code>baseline + 5 bpm</code></div>
   <div class="tier-rule">• Wrist Temp > <code>baseline + 0.4°F</code></div>
   <div class="tier-rule">• Resp Rate > <code>baseline + 0.8 breaths/min</code></div>
-  <div class="tier-rule" style="margin-top:8px;color:#f85149;">→ <strong>Jan 22:</strong> RHR 70 (baseline 62 + 6 = 68) ✓, HRV 26.2 (baseline 32 × 0.80 = 25.6) ≈✓, Walking HR 89 (baseline 84 + 5 = 89) ✓ → <strong>FIRES</strong></div>
+  <div class="tier-rule" style="margin-top:8px;color:#f85149;">→ <strong>Jan 22:</strong> RHR 70 (baseline 62.4 + 6 = 68.4) ✓, HRV 26.2 (baseline 32.1 × 0.85 = 27.3) ✓, Walking HR 89 (> 86) ✓ → <strong>FIRES</strong></div>
   <div class="tier-rule" style="color:#8b949e;margin-bottom:4px;">→ <strong>Action:</strong> Full zinc protocol (75mg), cancel strenuous plans, add 1-2 hrs sleep, hydrate aggressively</div>
 </div>
 
@@ -369,80 +369,124 @@ const hrvMin = [14.2,15.7,10.6,20.6,11.9,16.5,13.7,11.5,12.3,9.9,13.7,17.8,24.1,
 const hrvRange = hrvMax.map((v,i) => +(v - hrvMin[i]).toFixed(1));
 makeChart('hrvRangeChart', hrvRange, 'HRV Range (ms)', '#79c0ff');
 
-// ============= COMPOSITE CHART — Two-Tier =============
-function zScore(vals, baselineIdxs) {
-  const baseVals = baselineIdxs.map(i => vals[i]).filter(v => v !== null && v !== undefined);
-  const m = baseVals.reduce((a,b) => a+b, 0) / baseVals.length;
-  const s = Math.sqrt(baseVals.map(v => (v-m)**2).reduce((a,b)=>a+b,0)/baseVals.length) || 1;
-  return vals.map(v => v === null || v === undefined ? null : +((v - m) / s).toFixed(2));
-}
+// ============= COMPOSITE CHART — Actual Tier Logic =============
+// Wrist temp data and deltas for tier 1
+const tempRaw = [97.19,97.56,97.08,97.05,97.00,96.95,96.88,97.62,97.30,96.99,96.81,96.57,96.40,96.53,96.94];
+const tempDelta = tempRaw.map((v,i) => i===0 ? null : +(v - tempRaw[i-1]).toFixed(2));
+const respRaw = [18.6,17.4,17.6,18.5,18.9,18.8,18.7,19.2,19.0,17.9,16.8,17.6,17.4,17.1,17.2];
 
-const bl = [0,1,2,3,4]; // Jan 16-20
-
-// Absolute z-scores
-const rhrZ = zScore(rhrRaw, bl);
-const hrvZraw = zScore(hrvRaw, bl);
-const hrvZ = hrvZraw.map(v => v === null ? null : -v);
-const avgHrZ = zScore([66.1,75.3,68.4,71.0,67.9,66.9,70.4,75.1,79.8,72.8,69.0,66.7,66.3,67.1,66.7], bl);
-const respZ = zScore([18.6,17.4,17.6,18.5,18.9,18.8,18.7,19.2,19.0,17.9,16.8,17.6,17.4,17.1,17.2], bl);
-const walkZ = zScore(walkRaw, bl);
-
-// Delta bonus: add extra score when day-over-day deltas cross thresholds
-// This makes the composite score fire higher on Jan 21
-const deltaBonus = labels.map((_, i) => {
-  let bonus = 0;
-  if (rhrDelta[i] !== null && rhrDelta[i] >= 4) bonus += 0.8;
-  if (walkDelta[i] !== null && walkDelta[i] >= 5) bonus += 0.8;
-  if (hrvDeltaPct[i] !== null && hrvDeltaPct[i] <= -15) bonus += 0.6;
-  return bonus;
+// --- TIER 1: Count how many delta criteria are met (need ≥2 to fire) ---
+// Criteria: RHR Δ ≥ +4, Walk HR Δ ≥ +5 (exercise-filtered), HRV Δ ≤ -15%, Wrist Temp Δ ≥ +0.4
+// Walking HR filter: only count delta when BOTH days ≤ 90 bpm (excludes exercise-contaminated readings)
+const tier1criteria = labels.map((_, i) => {
+  let count = 0;
+  if (rhrDelta[i] !== null && rhrDelta[i] >= 4) count++;
+  const walkClean = i > 0 && walkRaw[i] <= 90 && walkRaw[i-1] <= 90;
+  if (walkClean && walkDelta[i] !== null && walkDelta[i] >= 5) count++;
+  if (hrvDeltaPct[i] !== null && hrvDeltaPct[i] <= -15) count++;
+  if (tempDelta[i] !== null && tempDelta[i] >= 0.4) count++;
+  return count;
 });
 
-// Combined: average of absolute z-scores + delta bonus
-const composite = labels.map((_, i) => {
-  const zVals = [rhrZ[i], hrvZ[i], avgHrZ[i], respZ[i], walkZ[i]].filter(v => v !== null);
-  const avgZ = zVals.length ? zVals.reduce((a,b)=>a+b,0)/zVals.length : 0;
-  return +((avgZ + deltaBonus[i])).toFixed(2);
+// --- TIER 2: Check absolute thresholds ---
+// RHR > 7-day rolling avg + 6  AND  HRV < 7-day rolling avg × 0.85
+// A 15% HRV drop is clinically meaningful for illness detection.
+// Plus any 1 of: Walk HR > baseline+5, Temp > baseline+0.4, Resp > baseline+0.8
+// Baselines (Jan 16-20 averages):
+const rhrBaseline = rhrRaw.slice(0,5).reduce((a,b)=>a+b,0)/5; // ~62.4
+const hrvBaseline = hrvRaw.slice(0,5).reduce((a,b)=>a+b,0)/5; // ~32.1
+const tempBaseline = tempRaw.slice(0,5).reduce((a,b)=>a+b,0)/5; // ~97.18
+const respBaseline = respRaw.slice(0,5).reduce((a,b)=>a+b,0)/5; // ~18.2
+
+const tier2criteria = labels.map((_, i) => {
+  const rhrMet = rhrRaw[i] > rhrBaseline + 6;
+  const hrvMet = hrvRaw[i] < hrvBaseline * 0.85; // 15% drop threshold
+  // Confirmation signals (any 1)
+  const walkConf = walkRaw[i] > 86;
+  const tempConf = tempRaw[i] > tempBaseline + 0.4;
+  const respConf = respRaw[i] > respBaseline + 0.8;
+  const confirmCount = (walkConf?1:0) + (tempConf?1:0) + (respConf?1:0);
+
+  if (rhrMet && hrvMet && confirmCount >= 1) return 3; // Full tier 2
+  if (rhrMet && hrvMet) return 2; // Core tier 2 without confirmation
+  if (rhrMet || hrvMet) return 1; // Partial
+  return 0;
 });
+
+// Post-illness cooldown: suppress Tier 1 for 7 days after Tier 2 fires
+// (recovery metrics are too volatile for delta-based detection)
+let lastTier2Fire = -999;
+const tier1display = tier1criteria.map((v, i) => {
+  if (tier2criteria[i] >= 2) lastTier2Fire = i;
+  if (i - lastTier2Fire <= 7 && lastTier2Fire >= 0) return 0; // suppressed
+  return v;
+});
+
+// Find first day each tier actually fires (for dynamic label placement)
+const tier1fireIdx = tier1display.findIndex(v => v >= 2);
+const tier2fireIdx = tier2criteria.findIndex(v => v >= 2);
 
 new Chart(document.getElementById('compositeChart'), {
   type: 'bar',
   data: {
     labels,
-    datasets: [{
-      data: composite,
-      backgroundColor: composite.map(v => v === null ? '#30363d' : v > 1.5 ? '#f85149' : v > 0.75 ? '#d29922' : '#238636'),
-      borderRadius: 4,
-      barThickness: 28
-    }]
+    datasets: [
+      {
+        label: 'Tier 1 Criteria Met (of 4)',
+        data: tier1display,
+        backgroundColor: tier1display.map((v,i) => v >= 2 ? '#d29922' : '#d2992244'),
+        borderRadius: 4, barPercentage: 0.4, categoryPercentage: 0.8,
+        order: 2
+      },
+      {
+        label: 'Tier 2 Criteria Met (of 3)',
+        data: tier2criteria,
+        backgroundColor: tier2criteria.map((v,i) => v >= 2 ? '#f85149' : '#f8514944'),
+        borderRadius: 4, barPercentage: 0.4, categoryPercentage: 0.8,
+        order: 1
+      }
+    ]
   },
   options: {
     responsive: true,
     maintainAspectRatio: true,
     plugins: {
-      legend: { display: false },
+      legend: { display: true, labels: { color: '#8b949e', font: { size: 11 } } },
       annotation: {
         annotations: {
-          tier2thresh: {
-            type: 'line', yMin: 1.5, yMax: 1.5,
-            borderColor: '#f85149', borderWidth: 2, borderDash: [6,3],
-            label: { content: 'Tier 2 Threshold (1.5σ)', display: true, position: 'end', backgroundColor: '#f85149', font: { size: 10 } }
-          },
           tier1thresh: {
-            type: 'line', yMin: 0.75, yMax: 0.75,
+            type: 'line', yMin: 2, yMax: 2,
             borderColor: '#d29922', borderWidth: 2, borderDash: [6,3],
-            label: { content: 'Tier 1 Threshold (0.75σ)', display: true, position: 'end', backgroundColor: '#d29922', font: { size: 10 } }
+            label: { content: 'Fires (≥2 criteria)', display: true, position: 'end', backgroundColor: '#d29922', font: { size: 10 } }
           },
           sickLine: {
             type: 'line', xMin: 7, xMax: 7,
             borderColor: '#f8514988', borderWidth: 2, borderDash: [6,3],
             label: { content: 'Sick', display: true, position: 'start', backgroundColor: '#f85149', font: { size: 10 } }
-          }
+          },
+          ...(tier1fireIdx >= 0 ? { t1fire: {
+            type: 'label', xValue: tier1fireIdx, yValue: 3.2,
+            content: ['⚠️ TIER 1 FIRES'],
+            backgroundColor: '#d29922', color: '#0d1117',
+            font: { size: 10, weight: 'bold' }, padding: 6, borderRadius: 6
+          }} : {}),
+          ...(tier2fireIdx >= 0 ? { t2fire: {
+            type: 'label', xValue: tier2fireIdx, yValue: 3.7,
+            content: ['🚨 TIER 2 FIRES'],
+            backgroundColor: '#f85149', color: '#fff',
+            font: { size: 10, weight: 'bold' }, padding: 6, borderRadius: 6
+          }} : {})
         }
       }
     },
     scales: {
       x: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { color: '#21262d' } },
-      y: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' }, title: { display: true, text: 'Composite Score (z + delta bonus)', color: '#8b949e' } }
+      y: {
+        ticks: { color: '#8b949e', stepSize: 1 },
+        grid: { color: '#21262d' },
+        title: { display: true, text: 'Criteria Met', color: '#8b949e' },
+        max: 4
+      }
     }
   }
 });
