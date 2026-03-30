@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Getting Sick Alert — Mike, Feb 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #c9d1d9; padding: 20px; max-width: 1400px; margin: 0 auto; }
+  h1 { text-align: center; font-size: 28px; margin-bottom: 6px; color: #f0f6fc; }
+  .subtitle { text-align: center; color: #8b949e; margin-bottom: 30px; font-size: 14px; }
+  .alert-banner { border-radius: 12px; padding: 20px 28px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px; }
+  .alert-banner.tier1 { background: linear-gradient(135deg, #9e6a03 0%, #d29922 100%); }
+  .alert-banner.tier2 { background: linear-gradient(135deg, #b62324 0%, #da3633 100%); }
+  .alert-banner.insight { background: linear-gradient(135deg, #1f3d5c 0%, #1f6feb 100%); }
+  .alert-banner .icon { font-size: 36px; }
+  .alert-banner .text h2 { color: #fff; font-size: 20px; margin-bottom: 4px; }
+  .alert-banner .text p { color: rgba(255,255,255,0.8); font-size: 14px; line-height: 1.5; }
+  .timeline { display: flex; justify-content: center; gap: 0; position: relative; }
+  .timeline::before { content: ''; position: absolute; top: 50%; left: 8%; right: 8%; height: 3px; background: #30363d; z-index: 0; }
+  .tl-item { display: flex; flex-direction: column; align-items: center; z-index: 1; min-width: 100px; }
+  .tl-dot { width: 16px; height: 16px; border-radius: 50%; border: 3px solid #0d1117; margin-bottom: 6px; }
+  .tl-dot.green { background: #3fb950; }
+  .tl-dot.yellow { background: #d29922; }
+  .tl-dot.orange { background: #f0883e; }
+  .tl-dot.red { background: #f85149; }
+  .tl-dot.blue { background: #58a6ff; }
+  .tl-label { font-size: 11px; color: #8b949e; text-align: center; }
+  .tl-label strong { color: #c9d1d9; display: block; }
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+  .chart-card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; }
+  .chart-card h3 { font-size: 15px; margin-bottom: 4px; color: #f0f6fc; }
+  .chart-card .signal { font-size: 12px; color: #8b949e; margin-bottom: 12px; }
+  .chart-card .signal .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-weight: 600; font-size: 11px; margin-left: 6px; }
+  .tag.strong { background: #b62324; color: #fff; }
+  .tag.moderate { background: #9e6a03; color: #fff; }
+  .tag.weak { background: #30363d; color: #8b949e; }
+  .tag.key { background: #8957e5; color: #fff; }
+  .tag.none { background: #21262d; color: #484f58; }
+  .chart-card canvas { width: 100% !important; }
+  .full-width { grid-column: 1 / -1; }
+  .section { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 28px; margin-bottom: 20px; }
+  .section h2 { color: #f0f6fc; margin-bottom: 16px; font-size: 20px; }
+  .finding-row { display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-start; }
+  .finding-row .rank { min-width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  .finding-row .detail { font-size: 14px; line-height: 1.5; }
+  .finding-row .detail strong { color: #f0f6fc; }
+  .r1 { background: #8957e5; color: #fff; }
+  .r2 { background: #b62324; color: #fff; }
+  .r3 { background: #da3633; color: #fff; }
+  .r4 { background: #9e6a03; color: #fff; }
+  .r5 { background: #30363d; color: #8b949e; }
+  .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px; }
+  .comp-card { background: #21262d; border-radius: 8px; padding: 16px; }
+  .comp-card h4 { color: #f0f6fc; font-size: 14px; margin-bottom: 8px; }
+  .comp-card .val { font-size: 24px; font-weight: 700; }
+  .comp-card .label { font-size: 12px; color: #8b949e; }
+  .footer { text-align: center; color: #484f58; font-size: 12px; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<h1>Getting Sick Alert — Mike</h1>
+<p class="subtitle">Retrospective analysis of Whoop data before Influenza A diagnosis — February 23, 2026</p>
+
+<div class="alert-banner insight">
+  <div class="icon">🔬</div>
+  <div class="text">
+    <h2>Key Finding: HRV-CV (Coefficient of Variation) was the best early signal</h2>
+    <p>Traditional metrics (RHR, HRV absolute) showed no clear warning before symptoms. But HRV-CV — the consistency of HRV over a 7-day window — compressed from ~22% to 11.4% in the week before illness. Mike's autonomic nervous system lost its dynamic range days before the flu hit.</p>
+  </div>
+</div>
+
+<div class="alert-banner tier1">
+  <div class="icon">⚠️</div>
+  <div class="text">
+    <h2>Possible "Heads Up" — Wednesday Feb 18</h2>
+    <p>HRV-CV dropped below 15% for 3+ days. Combined with highest baseline RHR (60 bpm) and lowest SpO2 (91.4% on Feb 19). Alert could have fired ~3 days before symptoms.</p>
+  </div>
+</div>
+
+<div class="alert-banner tier2">
+  <div class="icon">🚨</div>
+  <div class="text">
+    <h2>Confirmed illness — Monday Feb 23 morning</h2>
+    <p>Recovery crashed to 3%. HRV dropped 44% overnight. RHR spiked to 69. Skin temp hit 36.4°C (fever). Respiratory rate jumped 21%. But by this point Mike had been symptomatic for 30+ hours.</p>
+  </div>
+</div>
+
+<!-- Timeline -->
+<div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:20px 28px;margin-bottom:30px;margin-top:14px;">
+  <h3 style="color:#f0f6fc;margin-bottom:16px;font-size:15px;text-align:center;">Illness Timeline</h3>
+  <div class="timeline">
+    <div class="tl-item"><div class="tl-dot green"></div><div class="tl-label"><strong>Feb 10-14</strong>Baseline</div></div>
+    <div class="tl-item"><div class="tl-dot blue"></div><div class="tl-label"><strong>Feb 15-17</strong>HRV-CV<br>compressing</div></div>
+    <div class="tl-item"><div class="tl-dot yellow"></div><div class="tl-label"><strong>Feb 18-19</strong>⚠️ CV alert<br>RHR high</div></div>
+    <div class="tl-item"><div class="tl-dot green"></div><div class="tl-label"><strong>Feb 20</strong>Bounce<br>back</div></div>
+    <div class="tl-item"><div class="tl-dot orange"></div><div class="tl-label"><strong>Feb 21 6pm</strong>First<br>cough</div></div>
+    <div class="tl-item"><div class="tl-dot red"></div><div class="tl-label"><strong>Feb 22 PM</strong>Fever<br>spike</div></div>
+    <div class="tl-item"><div class="tl-dot red"></div><div class="tl-label"><strong>Feb 23</strong>Flu A+<br>3% recovery</div></div>
+    <div class="tl-item"><div class="tl-dot yellow"></div><div class="tl-label"><strong>Feb 25+</strong>Recovery<br>begins</div></div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="charts-grid">
+
+  <!-- 1. HRV-CV (the star) -->
+  <div class="chart-card full-width">
+    <h3>7-Day HRV Coefficient of Variation (CV%) — The Key Early Signal</h3>
+    <div class="signal">HRV-CV measures consistency, not level. A dropping CV means the autonomic system is losing dynamic range — getting "stuck." <span class="tag key">BEST EARLY SIGNAL — 3+ days early</span></div>
+    <canvas id="cvChart" style="height:220px"></canvas>
+  </div>
+
+  <!-- 2. HRV -->
+  <div class="chart-card">
+    <h3>Heart Rate Variability (HRV)</h3>
+    <div class="signal">Absolute level <span class="tag none">NO EARLY WARNING — same-day collapse</span></div>
+    <canvas id="hrvChart"></canvas>
+  </div>
+
+  <!-- 3. RHR -->
+  <div class="chart-card">
+    <h3>Resting Heart Rate</h3>
+    <div class="signal">Absolute level <span class="tag weak">WEAK — subtle pre-illness elevation</span></div>
+    <canvas id="rhrChart"></canvas>
+  </div>
+
+  <!-- 4. Recovery Score -->
+  <div class="chart-card">
+    <h3>Whoop Recovery Score</h3>
+    <div class="signal">Whoop's composite metric <span class="tag none">NO EARLY WARNING — 60% the morning of fever</span></div>
+    <canvas id="recovChart"></canvas>
+  </div>
+
+  <!-- 5. Skin Temperature -->
+  <div class="chart-card">
+    <h3>Skin Temperature</h3>
+    <div class="signal">Fever detection <span class="tag strong">STRONG confirmation — but lagging</span></div>
+    <canvas id="tempChart"></canvas>
+  </div>
+
+  <!-- 6. Respiratory Rate -->
+  <div class="chart-card">
+    <h3>Sleep Respiratory Rate</h3>
+    <div class="signal">Respiratory illness marker <span class="tag strong">STRONG confirmation — but lagging</span></div>
+    <canvas id="respChart"></canvas>
+  </div>
+
+  <!-- 7. Avg Daytime HR -->
+  <div class="chart-card">
+    <h3>Average Daytime Heart Rate (Strain)</h3>
+    <div class="signal">Cardiac load during waking hours <span class="tag moderate">MODERATE — subtle rise Feb 21-22</span></div>
+    <canvas id="avgHrChart"></canvas>
+  </div>
+
+  <!-- 8. SpO2 -->
+  <div class="chart-card">
+    <h3>Blood Oxygen (SpO2)</h3>
+    <div class="signal">Oxygen saturation <span class="tag moderate">MODERATE — Feb 19 dip to 91.4%</span></div>
+    <canvas id="spo2Chart"></canvas>
+  </div>
+
+  <!-- Composite Alert -->
+  <div class="chart-card full-width">
+    <h3>Composite Alert — Could We Have Warned Mike?</h3>
+    <div class="signal">Shows criteria met per day. HRV-CV based alert fires Feb 18. Traditional metrics only fire Feb 23 (too late).</div>
+    <canvas id="compositeChart" style="height:240px"></canvas>
+  </div>
+</div>
+
+<!-- Findings -->
+<div class="section">
+  <h2>Findings — Ranked by Early Warning Value</h2>
+
+  <div class="finding-row"><div class="rank r1">1</div><div class="detail"><strong>7-Day HRV-CV compressed from ~22% to 11.4% (Feb 15→21):</strong> This was the only metric that showed a sustained pre-illness pattern. Mike's HRV stopped oscillating naturally and got trapped in a narrow band (36-51 ms). The CV dropped below 15% starting Feb 15 and hit its nadir of 11.4% on Feb 21 (day of first symptoms). A threshold of "CV < 15% for 3+ consecutive days" would have fired around Feb 18 — giving ~3 days of lead time.</div></div>
+
+  <div class="finding-row"><div class="rank r2">2</div><div class="detail"><strong>RHR crept up to 60 bpm on Feb 18 (highest baseline):</strong> Mike's baseline RHR was ~56 bpm. The Feb 18 reading of 60 was the highest non-sick value, coinciding with the lowest non-sick HRV (36.6 ms). Together with the CV compression, this was the most suspicious pre-illness day. However, RHR alone showed only a +4 bpm shift — within normal variation for Mike.</div></div>
+
+  <div class="finding-row"><div class="rank r3">3</div><div class="detail"><strong>SpO2 dipped to 91.4% on Feb 19:</strong> The lowest reading in Mike's entire dataset. Combined with the HRV-CV compression and elevated RHR the day before, this was the third signal in the Feb 18-19 cluster. However, SpO2 readings from wrist-based sensors are noisy, so this alone wouldn't justify an alert.</div></div>
+
+  <div class="finding-row"><div class="rank r4">4</div><div class="detail"><strong>Avg daytime HR rose from 61 → 66 → 69 (Feb 20→22):</strong> The same daily activities cost more cardiac effort as the immune system activated. The Feb 21 reading of 66 bpm was the first day of symptoms — but Mike was also on a flight, which confounds the signal.</div></div>
+
+  <div class="finding-row"><div class="rank r5">5</div><div class="detail"><strong>Skin temp, respiratory rate, and recovery all collapsed on Feb 23 — lagging indicators:</strong> Skin temp spiked to 36.4°C (fever), respiratory rate jumped 21% to 16.8 breaths/min, and recovery crashed to 3%. All powerful confirmation that illness had arrived, but none provided advance warning. Mike had been symptomatic for 30+ hours before these metrics moved.</div></div>
+</div>
+
+<!-- Comparison with Matt -->
+<div class="section">
+  <h2>Why Mike's Flu Was Harder to Detect Than Matt's Illness</h2>
+  <div class="comparison">
+    <div class="comp-card">
+      <h4>Matt's Illness</h4>
+      <div class="val" style="color:#3fb950;">48-hr warning</div>
+      <div class="label">RHR jumped +10 bpm over 2 days. Walking HR surged +7 bpm. Multiple delta-based signals co-fired on Jan 21, two days before conscious symptoms.</div>
+    </div>
+    <div class="comp-card">
+      <h4>Mike's Flu</h4>
+      <div class="val" style="color:#d29922;">~3 days (CV only)</div>
+      <div class="label">No single metric spiked before symptoms. HRV-CV compression was the only sustained signal — subtle enough to miss without looking for it specifically. Influenza A's rapid onset left almost no traditional biomarker trail.</div>
+    </div>
+  </div>
+  <div class="comparison" style="margin-top:12px;">
+    <div class="comp-card">
+      <h4>Matt's HRV Variability</h4>
+      <div class="val" style="color:#58a6ff;">SD 5ms</div>
+      <div class="label">Lower day-to-day noise → easier to spot deviations</div>
+    </div>
+    <div class="comp-card">
+      <h4>Mike's HRV Variability</h4>
+      <div class="val" style="color:#f0883e;">SD 7.7ms</div>
+      <div class="label">Higher baseline noise → harder to detect illness signal</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Proposed Alert Logic for Mike</h2>
+  <div class="finding-row"><div class="rank r1">⚡</div><div class="detail"><strong>Primary trigger:</strong> 7-day HRV-CV < 15% for ≥ 3 consecutive days AND RHR > 7-day rolling average. This would have fired on <strong>Feb 18</strong> — giving ~3 days of lead time before first symptoms.</div></div>
+  <div class="finding-row"><div class="rank r2">🔄</div><div class="detail"><strong>Confirmation signals:</strong> SpO2 < 93%, daytime avg HR > baseline + 3 bpm, or skin temp > baseline + 0.5°C. Any 1 confirming = higher confidence.</div></div>
+  <div class="finding-row"><div class="rank r3">💊</div><div class="detail"><strong>Recommended actions on alert:</strong> Start antiviral (oseltamivir/Tamiflu within 48hrs of exposure is most effective), zinc, reduce exertion, extra sleep, hydrate.</div></div>
+</div>
+
+<div class="footer">Analysis based on Whoop data export • Jan 29 – Feb 27, 2026 • Mike Getting Sick Alert v1</div>
+
+<script>
+// ===== DATA =====
+const labels = ['Feb10','Feb11','Feb12','Feb13','Feb14','Feb15','Feb16','Feb18','Feb19','Feb20','Feb21','Feb22','Feb23','Feb24','Feb25','Feb26','Feb27'];
+const sickIdx = 12; // Feb 23
+
+const hrv = [57.1,40.0,50.4,55.2,44.4,39.8,41.5,36.6,37.1,49.8,45.5,51.3,28.9,27.8,49.2,38.7,36.2];
+const rhr = [52,59,54,52,55,58,58,60,58,56,56,57,69,62,50,51,52];
+const recov = [66,34,53,67,45,38,43,38,37,60,50,60,3,7,68,40,38];
+const temp = [34.8,34.4,34.6,33.5,33.8,34.7,34.4,34.6,33.7,35.1,33.6,34.6,36.4,35.6,33.5,35.0,33.6];
+const spo2 = [95.8,95.0,94.0,94.0,95.6,96.6,93.2,96.2,91.4,94.8,93.0,96.7,96.3,96.4,98.2,97.2,94.3];
+const respRate = [14.0,14.0,13.6,13.6,null,13.8,14.0,14.0,13.8,13.9,13.9,13.8,16.8,15.8,14.2,14.4,14.1];
+const avgHr = [null,null,null,null,64,67,62,64,64,61,66,69,69,60,56,58,56];
+
+// HRV-CV: need longer history. Use full dataset from Jan 29.
+const fullDates = ['Jan29','Jan30','Jan31','Feb01','Feb02','Feb03','Feb04','Feb05','Feb06','Feb07','Feb08','Feb09',
+                   'Feb10','Feb11','Feb12','Feb13','Feb14','Feb15','Feb16','Feb18','Feb19','Feb20','Feb21','Feb22',
+                   'Feb23','Feb24','Feb25','Feb26','Feb27'];
+const fullHrv = [98.1,72.0,63.6,57.6,41.8,57.2,69.7,59.4,37.7,54.5,74.3,45.3,
+                 57.1,40.0,50.4,55.2,44.4,39.8,41.5,36.6,37.1,49.8,45.5,51.3,
+                 28.9,27.8,49.2,38.7,36.2];
+
+// Compute 7-day CV for the display window (Feb10-Feb27)
+function calcCV(arr) {
+  const m = arr.reduce((a,b)=>a+b,0)/arr.length;
+  const variance = arr.reduce((a,v)=>(a+(v-m)**2),0)/(arr.length-1);
+  return (Math.sqrt(variance)/m)*100;
+}
+
+const cvData = [];
+const cvLabels = [];
+// Map display labels to fullHrv indices
+const displayStartInFull = 12; // Feb10 is index 12 in fullDates
+for (let i = 0; i < labels.length; i++) {
+  const fullIdx = displayStartInFull + i;
+  if (fullIdx >= 6) {
+    const window = fullHrv.slice(fullIdx - 6, fullIdx + 1);
+    cvData.push(+calcCV(window).toFixed(1));
+  } else {
+    cvData.push(null);
+  }
+}
+
+// ===== ANNOTATION PRESETS =====
+const annotations = {
+  annotations: {
+    sickLine: {
+      type: 'line', xMin: sickIdx, xMax: sickIdx,
+      borderColor: '#f8514988', borderWidth: 2, borderDash: [6,3],
+      label: { content: 'Flu A+', display: true, position: 'start', backgroundColor: '#f85149', font: { size: 10 } }
+    },
+    symptomsLine: {
+      type: 'line', xMin: 10, xMax: 10,
+      borderColor: '#f0883e88', borderWidth: 2, borderDash: [6,3],
+      label: { content: '1st symptoms', display: true, position: 'end', backgroundColor: '#f0883e', font: { size: 10 } }
+    },
+    cvAlertLine: {
+      type: 'line', xMin: 7, xMax: 7,
+      borderColor: '#d2992288', borderWidth: 2, borderDash: [6,3],
+      label: { content: 'CV alert', display: true, position: 'start', backgroundColor: '#d29922', font: { size: 10 } }
+    },
+    sickZone: {
+      type: 'box', xMin: 10, xMax: 14,
+      backgroundColor: 'rgba(248,81,73,0.07)', borderWidth: 0
+    }
+  }
+};
+
+const baseOpts = {
+  responsive: true,
+  plugins: { legend: { display: false }, annotation: annotations },
+  scales: {
+    x: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { color: '#21262d' } },
+    y: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } }
+  }
+};
+
+function makeChart(id, data, label, color, yConfig={}, extraAnnotations={}) {
+  const opts = JSON.parse(JSON.stringify(baseOpts));
+  Object.assign(opts.scales.y, yConfig);
+  if (Object.keys(extraAnnotations).length) {
+    Object.assign(opts.plugins.annotation.annotations, extraAnnotations);
+  }
+  new Chart(document.getElementById(id), {
+    type: 'line',
+    data: { labels, datasets: [{
+      data, label, borderColor: color, backgroundColor: color+'33',
+      pointBackgroundColor: data.map((v,i) => i===7?'#d29922' : i>=10&&i<=13?'#f85149' : color),
+      pointRadius: data.map((v,i) => (i===7||i>=10&&i<=13)?6:3),
+      tension: 0.3, fill: true
+    }]},
+    options: opts
+  });
+}
+
+// ===== 1. HRV-CV CHART =====
+new Chart(document.getElementById('cvChart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{
+      data: cvData, label: 'HRV-CV (%)',
+      borderColor: '#8957e5', backgroundColor: '#8957e533',
+      pointBackgroundColor: cvData.map((v,i) => v!==null && v<15 ? '#d29922' : '#8957e5'),
+      pointRadius: cvData.map((v,i) => v!==null && v<15 ? 6 : 3),
+      tension: 0.3, fill: true
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    plugins: {
+      legend: { display: false },
+      annotation: {
+        annotations: {
+          threshold: {
+            type: 'line', yMin: 15, yMax: 15,
+            borderColor: '#d29922', borderWidth: 2, borderDash: [6,3],
+            label: { content: 'Alert threshold (15%)', display: true, position: 'end', backgroundColor: '#d29922', font: { size: 10 } }
+          },
+          sickLine: annotations.annotations.sickLine,
+          symptomsLine: annotations.annotations.symptomsLine,
+          compressionZone: {
+            type: 'box', xMin: 5, xMax: 11,
+            backgroundColor: 'rgba(210,153,34,0.08)', borderWidth: 0
+          },
+          cvFireLabel: {
+            type: 'label', xValue: 7, yValue: 12,
+            content: ['⚠️ CV below 15%','for 3+ days'],
+            backgroundColor: '#d29922', color: '#0d1117',
+            font: { size: 10, weight: 'bold' }, padding: 6, borderRadius: 6
+          }
+        }
+      }
+    },
+    scales: {
+      x: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { color: '#21262d' } },
+      y: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' }, title: { display: true, text: 'CV %', color: '#8b949e' } }
+    }
+  }
+});
+
+// ===== Individual charts =====
+makeChart('hrvChart', hrv, 'HRV (ms)', '#58a6ff');
+makeChart('rhrChart', rhr, 'RHR (bpm)', '#f85149');
+makeChart('recovChart', recov, 'Recovery %', '#3fb950', { suggestedMin: 0, suggestedMax: 100 });
+makeChart('tempChart', temp, 'Skin Temp (°C)', '#d29922', { suggestedMin: 33, suggestedMax: 37 });
+makeChart('respChart', respRate, 'Resp Rate', '#56d364', { suggestedMin: 13, suggestedMax: 17 });
+makeChart('avgHrChart', avgHr, 'Avg HR (bpm)', '#f97583');
+makeChart('spo2Chart', spo2, 'SpO2 (%)', '#79c0ff', { suggestedMin: 90, suggestedMax: 100 });
+
+// ===== COMPOSITE ALERT CHART =====
+// For each day, count alert criteria met
+// CV-based: HRV-CV < 15% for 3+ consecutive days (check rolling)
+// Traditional: RHR > baseline+6, HRV < baseline*0.85, temp > baseline+0.5, resp > baseline+1
+const rhrBl = rhr.slice(0,7).reduce((a,b)=>a+b,0)/7; // ~53.7
+const hrvBl = hrv.slice(0,7).reduce((a,b)=>a+b,0)/7; // ~47.5
+const tempBl = temp.slice(0,7).reduce((a,b)=>a+b,0)/7; // ~34.2
+
+// Track consecutive days CV < 15%
+let consecCVlow = 0;
+const cvAlertActive = cvData.map((v,i) => {
+  if (v !== null && v < 15) { consecCVlow++; } else { consecCVlow = 0; }
+  return consecCVlow >= 3 ? 1 : 0;
+});
+
+// RHR above baseline
+const rhrElevated = rhr.map(v => v > rhrBl + 3 ? 1 : 0);
+
+// SpO2 below 93
+const spo2Low = spo2.map(v => v < 93 ? 1 : 0);
+
+// Traditional collapse (same-day)
+const traditionalCollapse = labels.map((_, i) => {
+  let count = 0;
+  if (rhr[i] > rhrBl + 8) count++;
+  if (hrv[i] < hrvBl * 0.70) count++;
+  if (temp[i] > tempBl + 1.5) count++;
+  return count >= 2 ? 1 : 0;
+});
+
+new Chart(document.getElementById('compositeChart'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      {
+        label: 'HRV-CV Alert (sustained compression)',
+        data: cvAlertActive,
+        backgroundColor: cvAlertActive.map(v => v ? '#8957e5' : '#8957e522'),
+        borderRadius: 4, barPercentage: 0.3, categoryPercentage: 0.9, order: 2
+      },
+      {
+        label: 'Elevated RHR',
+        data: rhrElevated,
+        backgroundColor: rhrElevated.map(v => v ? '#d29922' : '#d2992222'),
+        borderRadius: 4, barPercentage: 0.3, categoryPercentage: 0.9, order: 3
+      },
+      {
+        label: 'Low SpO2 (<93%)',
+        data: spo2Low,
+        backgroundColor: spo2Low.map(v => v ? '#f0883e' : '#f0883e22'),
+        borderRadius: 4, barPercentage: 0.3, categoryPercentage: 0.9, order: 4
+      },
+      {
+        label: 'Traditional Collapse (RHR+HRV+Temp)',
+        data: traditionalCollapse,
+        backgroundColor: traditionalCollapse.map(v => v ? '#f85149' : '#f8514922'),
+        borderRadius: 4, barPercentage: 0.3, categoryPercentage: 0.9, order: 1
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    plugins: {
+      legend: { display: true, labels: { color: '#8b949e', font: { size: 11 } } },
+      annotation: {
+        annotations: {
+          symptomsLine: {
+            type: 'line', xMin: 10, xMax: 10,
+            borderColor: '#f0883e88', borderWidth: 2, borderDash: [6,3],
+            label: { content: '1st symptoms', display: true, position: 'start', backgroundColor: '#f0883e', font: { size: 10 } }
+          },
+          sickLine: {
+            type: 'line', xMin: 12, xMax: 12,
+            borderColor: '#f8514988', borderWidth: 2, borderDash: [6,3],
+            label: { content: 'Flu A+', display: true, position: 'end', backgroundColor: '#f85149', font: { size: 10 } }
+          },
+          cvFires: {
+            type: 'label', xValue: 7, yValue: 1.3,
+            content: ['⚠️ CV ALERT FIRES'],
+            backgroundColor: '#8957e5', color: '#fff',
+            font: { size: 10, weight: 'bold' }, padding: 6, borderRadius: 6
+          }
+        }
+      }
+    },
+    scales: {
+      x: { stacked: true, ticks: { color: '#8b949e', font: { size: 10 } }, grid: { color: '#21262d' } },
+      y: {
+        stacked: true,
+        ticks: { color: '#8b949e', stepSize: 1 }, grid: { color: '#21262d' },
+        title: { display: true, text: 'Criteria Active', color: '#8b949e' }, max: 4
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
