@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Getting Sick Alert — Mike, Feb 2026</title>
+<title>Getting Sick Alert — Feb 2026</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
 <style>
@@ -62,14 +62,14 @@
 </head>
 <body>
 
-<h1>Getting Sick Alert — Mike</h1>
+<h1>Getting Sick Alert — Feb 2026</h1>
 <p class="subtitle">Retrospective analysis of Whoop data before Influenza A diagnosis — February 23, 2026</p>
 
 <div class="alert-banner insight">
   <div class="icon">🔬</div>
   <div class="text">
     <h2>Key Finding: HRV-CV (Coefficient of Variation) was the best early signal</h2>
-    <p>Traditional metrics (RHR, HRV absolute) showed no clear warning before symptoms. But HRV-CV — the consistency of HRV over a 7-day window — compressed from ~22% to 11.4% in the week before illness. Mike's autonomic nervous system lost its dynamic range days before the flu hit.</p>
+    <p>Traditional metrics (RHR, HRV absolute) showed no clear warning before symptoms. But HRV-CV — the consistency of HRV over a 7-day window — compressed from ~22% to 11.4% in the week before illness. The autonomic nervous system lost its dynamic range days before the flu hit.</p>
   </div>
 </div>
 
@@ -85,7 +85,7 @@
   <div class="icon">🚨</div>
   <div class="text">
     <h2>Confirmed illness — Monday Feb 23 morning</h2>
-    <p>Recovery crashed to 3%. HRV dropped 44% overnight. RHR spiked to 69. Skin temp hit 36.4°C (fever). Respiratory rate jumped 21%. But by this point Mike had been symptomatic for 30+ hours.</p>
+    <p>Recovery crashed to 3%. HRV dropped 44% overnight. RHR spiked to 69. Skin temp hit 36.4°C (fever). Respiratory rate jumped 21%. But by this point symptoms had been present for 30+ hours.</p>
   </div>
 </div>
 
@@ -165,7 +165,7 @@
 
   <!-- Composite Alert -->
   <div class="chart-card full-width">
-    <h3>Composite Alert — Could We Have Warned Mike?</h3>
+    <h3>Composite Alert — Could an Early Warning Have Fired?</h3>
     <div class="signal">Shows criteria met per day. HRV-CV based alert fires Feb 18. Traditional metrics only fire Feb 23 (too late).</div>
     <canvas id="compositeChart" style="height:240px"></canvas>
   </div>
@@ -175,20 +175,20 @@
 <div class="section">
   <h2>Findings — Ranked by Early Warning Value</h2>
 
-  <div class="finding-row"><div class="rank r1">1</div><div class="detail"><strong>7-Day HRV-CV compressed from ~22% to 11.4% (Feb 15→21):</strong> This was the only metric that showed a sustained pre-illness pattern. Mike's HRV stopped oscillating naturally and got trapped in a narrow band (36-51 ms). The CV dropped below 15% starting Feb 15 and hit its nadir of 11.4% on Feb 21 (day of first symptoms). A threshold of "CV < 15% for 3+ consecutive days" would have fired around Feb 18 — giving ~3 days of lead time.</div></div>
+  <div class="finding-row"><div class="rank r1">1</div><div class="detail"><strong>7-Day HRV-CV compressed from ~22% to 11.4% (Feb 15→21):</strong> This was the only metric that showed a sustained pre-illness pattern. HRV stopped oscillating naturally and got trapped in a narrow band (36-51 ms). The CV dropped below 15% starting Feb 15 and hit its nadir of 11.4% on Feb 21 (day of first symptoms). A threshold of "CV < 15% for 3+ consecutive days" would have fired around Feb 18 — giving ~3 days of lead time.</div></div>
 
-  <div class="finding-row"><div class="rank r2">2</div><div class="detail"><strong>RHR crept up to 60 bpm on Feb 18 (highest baseline):</strong> Mike's baseline RHR was ~56 bpm. The Feb 18 reading of 60 was the highest non-sick value, coinciding with the lowest non-sick HRV (36.6 ms). Together with the CV compression, this was the most suspicious pre-illness day. However, RHR alone showed only a +4 bpm shift — within normal variation for Mike.</div></div>
+  <div class="finding-row"><div class="rank r2">2</div><div class="detail"><strong>RHR crept up to 60 bpm on Feb 18 (highest baseline):</strong> Baseline RHR was ~56 bpm. The Feb 18 reading of 60 was the highest non-sick value, coinciding with the lowest non-sick HRV (36.6 ms). Together with the CV compression, this was the most suspicious pre-illness day. However, RHR alone showed only a +4 bpm shift — within normal variation.</div></div>
 
-  <div class="finding-row"><div class="rank r3">3</div><div class="detail"><strong>SpO2 dipped to 91.4% on Feb 19:</strong> The lowest reading in Mike's entire dataset. Combined with the HRV-CV compression and elevated RHR the day before, this was the third signal in the Feb 18-19 cluster. However, SpO2 readings from wrist-based sensors are noisy, so this alone wouldn't justify an alert.</div></div>
+  <div class="finding-row"><div class="rank r3">3</div><div class="detail"><strong>SpO2 dipped to 91.4% on Feb 19:</strong> The lowest reading in the entire dataset. Combined with the HRV-CV compression and elevated RHR the day before, this was the third signal in the Feb 18-19 cluster. However, SpO2 readings from wrist-based sensors are noisy, so this alone wouldn't justify an alert.</div></div>
 
-  <div class="finding-row"><div class="rank r4">4</div><div class="detail"><strong>Avg daytime HR rose from 61 → 66 → 69 (Feb 20→22):</strong> The same daily activities cost more cardiac effort as the immune system activated. The Feb 21 reading of 66 bpm was the first day of symptoms — but Mike was also on a flight, which confounds the signal.</div></div>
+  <div class="finding-row"><div class="rank r4">4</div><div class="detail"><strong>Avg daytime HR rose from 61 → 66 → 69 (Feb 20→22):</strong> The same daily activities cost more cardiac effort as the immune system activated. The Feb 21 reading of 66 bpm was the first day of symptoms — but there was also a flight that day, which confounds the signal.</div></div>
 
-  <div class="finding-row"><div class="rank r5">5</div><div class="detail"><strong>Skin temp, respiratory rate, and recovery all collapsed on Feb 23 — lagging indicators:</strong> Skin temp spiked to 36.4°C (fever), respiratory rate jumped 21% to 16.8 breaths/min, and recovery crashed to 3%. All powerful confirmation that illness had arrived, but none provided advance warning. Mike had been symptomatic for 30+ hours before these metrics moved.</div></div>
+  <div class="finding-row"><div class="rank r5">5</div><div class="detail"><strong>Skin temp, respiratory rate, and recovery all collapsed on Feb 23 — lagging indicators:</strong> Skin temp spiked to 36.4°C (fever), respiratory rate jumped 21% to 16.8 breaths/min, and recovery crashed to 3%. All powerful confirmation that illness had arrived, but none provided advance warning. symptoms had been present for 30+ hours before these metrics moved.</div></div>
 </div>
 
 <!-- Comparison with Matt -->
 <div class="section">
-  <h2>Why Mike's Flu Was Harder to Detect Than Matt's Illness</h2>
+  <h2>Why This Flu Was Harder to Detect</h2>
   <div class="comparison">
     <div class="comp-card">
       <h4>Matt's Illness</h4>
@@ -196,7 +196,7 @@
       <div class="label">RHR jumped +10 bpm over 2 days. Walking HR surged +7 bpm. Multiple delta-based signals co-fired on Jan 21, two days before conscious symptoms.</div>
     </div>
     <div class="comp-card">
-      <h4>Mike's Flu</h4>
+      <h4>This Flu (Influenza A)</h4>
       <div class="val" style="color:#d29922;">~3 days (CV only)</div>
       <div class="label">No single metric spiked before symptoms. HRV-CV compression was the only sustained signal — subtle enough to miss without looking for it specifically. Influenza A's rapid onset left almost no traditional biomarker trail.</div>
     </div>
@@ -208,7 +208,7 @@
       <div class="label">Lower day-to-day noise → easier to spot deviations</div>
     </div>
     <div class="comp-card">
-      <h4>Mike's HRV Variability</h4>
+      <h4>Subject HRV Variability</h4>
       <div class="val" style="color:#f0883e;">SD 7.7ms</div>
       <div class="label">Higher baseline noise → harder to detect illness signal</div>
     </div>
@@ -216,13 +216,13 @@
 </div>
 
 <div class="section">
-  <h2>Proposed Alert Logic for Mike</h2>
+  <h2>Proposed Alert Logic</h2>
   <div class="finding-row"><div class="rank r1">⚡</div><div class="detail"><strong>Primary trigger:</strong> 7-day HRV-CV < 15% for ≥ 3 consecutive days AND RHR > 7-day rolling average. This would have fired on <strong>Feb 18</strong> — giving ~3 days of lead time before first symptoms.</div></div>
   <div class="finding-row"><div class="rank r2">🔄</div><div class="detail"><strong>Confirmation signals:</strong> SpO2 < 93%, daytime avg HR > baseline + 3 bpm, or skin temp > baseline + 0.5°C. Any 1 confirming = higher confidence.</div></div>
   <div class="finding-row"><div class="rank r3">💊</div><div class="detail"><strong>Recommended actions on alert:</strong> Start antiviral (oseltamivir/Tamiflu within 48hrs of exposure is most effective), zinc, reduce exertion, extra sleep, hydrate.</div></div>
 </div>
 
-<div class="footer">Analysis based on Whoop data export • Jan 29 – Feb 27, 2026 • Mike Getting Sick Alert v1</div>
+<div class="footer">Analysis based on Whoop data export • Jan 29 – Feb 27, 2026 • Getting Sick Alert v1</div>
 
 <script>
 // ===== DATA =====
